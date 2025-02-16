@@ -40,4 +40,3 @@ Then simply run the game as an executable file like this:
 
 ## Features that should be added to the game
 - Using spaceship images instead of simple shapes
-- Changing the game's difficulty after reaching certain scores

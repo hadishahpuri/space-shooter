@@ -35,6 +35,7 @@ type Game struct {
     gameOver bool
 	lastSpawnTime time.Time // Track last enemy spawn time
 	lastShootTime time.Time // Track last bullet shoot time
+    enemyRespawnGap int64
 }
 
 func (g *Game) Update() error {
@@ -46,13 +47,13 @@ func (g *Game) Update() error {
 		return nil
 	}
 
-
-    g.handleMovements()
-    g.handleBooletFires()
-    g.handleBooletPositions()
-    g.handleEnemiesMovements()
-    g.destroyEnemyOnShot()
-    g.addNewEnemy()
+    g.SetDifficultyLevel()
+    g.HandleMovements()
+    g.HandleBulletFires()
+    g.HandleBulletPositions()
+    g.HandleEnemiesMovements()
+    g.DestroyEnemyOnShot()
+    g.AddNewEnemy()
 
 	return nil
 }
@@ -73,9 +74,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
     ebitenutil.DebugPrint(screen, fmt.Sprintf("Score: %d", g.score))
 
-	// 🔴 Show "Game Over" if game over
 	if g.gameOver {
-		// Define the game over message
 		gameOverText := "GAME OVER\nPress R to Restart"
 
 		// Get the font width and height for the text
@@ -96,7 +95,7 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 	return screenWidth, screenHeight
 }
 
-func (g *Game) handleMovements() {
+func (g *Game) HandleMovements() {
 	// Move player left
 	if ebiten.IsKeyPressed(ebiten.KeyLeft) && g.playerX > 0 {
 		g.playerX -= playerSpeed
@@ -107,7 +106,7 @@ func (g *Game) handleMovements() {
 	}
 }
 
-func (g *Game) handleBooletFires() {
+func (g *Game) HandleBulletFires() {
     // Fire bullet when Space key is pressed
     if time.Since(g.lastShootTime).Milliseconds() >= 300 && ebiten.IsKeyPressed(ebiten.KeySpace) {
 	    g.bullets = append(g.bullets, Bullet{x: g.playerX + 15, y: screenHeight - 60})
@@ -115,14 +114,14 @@ func (g *Game) handleBooletFires() {
     }
 }
 
-func (g *Game) handleBooletPositions() {
+func (g *Game) HandleBulletPositions() {
     // Update bullet positions
     for i := range g.bullets {
 	    g.bullets[i].y -= 8 // Move bullets up
     }
 }
 
-func (g *Game) handleEnemiesMovements() {
+func (g *Game) HandleEnemiesMovements() {
     // Move enemies downward
     for i := range g.enemies {
 	    g.enemies[i].y += 1
@@ -135,21 +134,21 @@ func (g *Game) handleEnemiesMovements() {
     }
 }
 
-func (g *Game) spawnEnemy() {
+func (g *Game) SpawnEnemy() {
 	enemyX := float64(rand.Intn(screenWidth - 40)) // Random X position
 	g.enemies = append(g.enemies, Enemy{x: enemyX, y: 50}) // Add new enemy
 }
 
-func (g *Game) initEnemies() {
+func (g *Game) InitEnemies() {
 	for i := 0; i < 5; i++ {
 		g.enemies = append(g.enemies, Enemy{x: float64(i * 80), y: 50})
 	}
 }
 
-func (g *Game) addNewEnemy() {
+func (g *Game) AddNewEnemy() {
     // ⏳ Enemy Respawn Every 1 Second
-	if time.Since(g.lastSpawnTime).Seconds() >= 1 {
-		g.spawnEnemy() // Call function to spawn a new enemy
+	if time.Since(g.lastSpawnTime).Milliseconds() >= g.enemyRespawnGap {
+		g.SpawnEnemy() // Call function to spawn a new enemy
 		g.lastSpawnTime = time.Now() // Reset spawn timer
 	}
 }
@@ -162,7 +161,24 @@ func (g *Game) ResetGame() {
 	g.gameOver = false
 }
 
-func (g *Game) destroyEnemyOnShot() {
+func (g *Game) SetDifficultyLevel() {
+    switch {
+	    case g.score < 100:
+		    g.enemyRespawnGap = 1000
+	    case g.score >= 100 && g.score < 200:
+		    g.enemyRespawnGap = 900
+	    case g.score >= 200 && g.score < 300:
+		    g.enemyRespawnGap = 800
+	    case g.score >= 300 && g.score < 400:
+		    g.enemyRespawnGap = 700
+	    case g.score >= 400 && g.score < 500:
+		    g.enemyRespawnGap = 500
+	    default:
+		    g.enemyRespawnGap = 300
+	}
+}
+
+func (g *Game) DestroyEnemyOnShot() {
     // 🔥 Collision Detection (Bullets vs. Enemies)
 	for bi := 0; bi < len(g.bullets); bi++ {
 		b := g.bullets[bi]
@@ -190,6 +206,7 @@ func main() {
 	game := &Game{
         playerX: screenWidth / 2,
         lastSpawnTime: time.Now(),
+        enemyRespawnGap: 1000, 
     }
 
 	ebiten.SetWindowSize(screenWidth, screenHeight)
