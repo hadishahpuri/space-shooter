@@ -32,3 +32,12 @@ Then simply run the game as an executable file like this:
 ```bash
 ./space-shooter
 ```
+
+## How to play
+- Use the arrow keys for navigation,
+- Use the Space key for shooting
+
+
+## Features that should be added to the game
+- Using spaceship images instead of simple shapes
+- Changing the game's difficulty after reaching certain scores
